@@ -1,0 +1,32 @@
+menu "IoT device configuration"
+
+config IOT_WIFI_SSID
+    string "Wi-Fi SSID"
+    default "YOUR_WIFI_NAME"
+
+config IOT_WIFI_PASSWORD
+    string "Wi-Fi password"
+    default "YOUR_WIFI_PASSWORD"
+
+config IOT_MQTT_BROKER_URL
+    string "MQTT broker URL"
+    default "mqtt://192.168.137.1:1883"
+    help
+        Use the LAN IPv4 address of the computer running Docker and EMQX.
+        Do not use localhost because localhost on the board means the ESP32 itself.
+
+config IOT_DEVICE_ID
+    string "Device ID"
+    default "esp32-001"
+
+config IOT_DHT_GPIO
+    int "DHT22 DATA GPIO"
+    range 0 48
+    default 15
+
+config IOT_LED_GPIO
+    int "LED GPIO"
+    range 0 48
+    default 2
+
+endmenu

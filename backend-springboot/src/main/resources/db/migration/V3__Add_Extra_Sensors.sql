@@ -1,0 +1,3 @@
+ALTER TABLE telemetry
+ADD COLUMN illuminance DOUBLE PRECISION,
+ADD COLUMN soil_moisture DOUBLE PRECISION;

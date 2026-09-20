@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: iot_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-iotuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-iotpass}
+      POSTGRES_DB: ${DB_NAME:-iotdb}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-iotuser} -d ${DB_NAME:-iotdb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot_network
+
+  emqx:
+    image: emqx:5.8.0
+    container_name: iot_emqx
+    environment:
+      EMQX_NODE_NAME: emqx@node1.emqx.io
+      EMQX_ALLOW_ANONYMOUS: "true"
+      EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD_USER:-admin}
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-public}
+    ports:
+      - "1883:1883"
+      - "8083:8083"
+      - "8084:8084"
+      - "8883:8883"
+      - "18083:18083"
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - ./infrastructure/emqx/acl.conf:/opt/emqx/etc/acl.conf
+    networks:
+      - iot_network
+
+  backend:
+    build:
+      context: ./backend-springboot
+    container_name: iot_backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${DB_NAME:-iotdb}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER:-iotuser}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-iotpass}
+      - MQTT_BROKER_URL=tcp://emqx:1883
+      - JWT_SECRET=${JWT_SECRET:-this_is_a_very_secret_key_for_jwt_signing_which_needs_to_be_at_least_256_bits_long}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      emqx:
+        condition: service_started
+    networks:
+      - iot_network
+
+  web:
+    build:
+      context: ./web-react
+    container_name: iot_web
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - iot_network
+
+  simulator:
+    build:
+      context: ./device-simulator
+    container_name: iot_simulator
+    environment:
+      - MQTT_BROKER=emqx
+      - MQTT_PORT=1883
+      - NUM_DEVICES=1
+    depends_on:
+      - emqx
+    networks:
+      - iot_network
+
+volumes:
+  postgres_data:
+  emqx_data:
+
+networks:
+  iot_network:
+    driver: bridge

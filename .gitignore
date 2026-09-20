@@ -1,0 +1,42 @@
+# Environment variables
+.env
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backend Spring Boot
+backend-springboot/target/
+backend-springboot/logs/
+
+# React Web
+web-react/node_modules/
+web-react/dist/
+
+# Flutter Mobile
+mobile-flutter/.dart_tool/
+mobile-flutter/build/
+mobile-flutter/.flutter-plugins
+mobile-flutter/.flutter-plugins-dependencies
+
+# Python Simulator
+device-simulator/__pycache__/
+device-simulator/venv/
+device-simulator/.venv/
+
+# ESP32 Firmware
+esp32-firmware/build/
+esp32-firmware/managed_components/
+esp32-firmware/dependencies.lock
+
+esp32-firmware/sdkconfig
+esp32-firmware/sdkconfig.old
+esp32-firmware/build/
+web-react/node_modules/
+web-react/dist/
+.env
