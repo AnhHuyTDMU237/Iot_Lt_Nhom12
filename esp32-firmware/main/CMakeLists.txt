@@ -3,7 +3,10 @@ idf_component_register(
         "main.c"
         "dht22.c"
         "wifi_manager.c"
-    INCLUDE_DIRS "."
+
+    INCLUDE_DIRS
+        "."
+
     REQUIRES
         esp_wifi
         esp_event
@@ -13,5 +16,6 @@ idf_component_register(
         json
         driver
         esp_timer
+        esp_adc
         lwip
 )
