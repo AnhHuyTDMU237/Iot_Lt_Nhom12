@@ -551,10 +551,11 @@ static void mqtt_app_start(void)
     static char lwt_topic[96];
     static char lwt_payload[192];
 
-    char timestamp[32];
-
-    iso8601_utc_now(timestamp, sizeof(timestamp));
-
+    /*
+     * Last Will được khai báo khi ESP32 kết nối MQTT.
+     * Khi ESP32 mất điện hoặc mất Wi-Fi, EMQX sẽ tự gửi
+     * payload OFFLINE sau khi hết thời gian keepalive.
+     */
     snprintf(
         lwt_topic,
         sizeof(lwt_topic),
@@ -567,26 +568,44 @@ static void mqtt_app_start(void)
         sizeof(lwt_payload),
         "{"
         "\"deviceId\":\"%s\","
-        "\"status\":\"OFFLINE\","
-        "\"timestamp\":\"%s\""
+        "\"status\":\"OFFLINE\""
         "}",
-        DEVICE_ID,
-        timestamp
+        DEVICE_ID
     );
 
     const esp_mqtt_client_config_t mqtt_config = {
         .broker.address.uri = MQTT_BROKER_URL,
 
-        .session.last_will = {
-            .topic = lwt_topic,
-            .msg = lwt_payload,
-            .qos = 1,
-            .retain = 1,
+        .session = {
+            /*
+             * ESP32 gửi gói MQTT keepalive mỗi 10 giây.
+             * Broker thường phát hiện mất kết nối sau
+             * khoảng 1 đến 1.5 lần thời gian này.
+             */
+            .keepalive = 10,
+
+            .last_will = {
+                .topic = lwt_topic,
+                .msg = lwt_payload,
+                .qos = 1,
+                .retain = 1,
+            },
         },
+
+        /*
+         * Nếu chỉ mất Wi-Fi tạm thời, thử kết nối lại
+         * sau mỗi 5 giây.
+         */
+        .network.reconnect_timeout_ms = 5000,
     };
 
     mqtt_client =
         esp_mqtt_client_init(&mqtt_config);
+
+    if (mqtt_client == NULL) {
+        ESP_LOGE(TAG, "Failed to initialize MQTT client");
+        return;
+    }
 
     ESP_ERROR_CHECK(
         esp_mqtt_client_register_event(
